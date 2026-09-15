@@ -147,6 +147,58 @@ st.markdown("""
         padding: 0 !important;
         display: inline-block !important;
     }
+
+    /* =========================================================
+       사이드바 접기(<<) 및 펼치기(>>) 버튼 항상 표시 및 시인성 강화
+       ========================================================= */
+    /* 1. 사이드바가 열려 있을 때 접기 버튼 (<<) 상시 표시 */
+    [data-testid="stSidebarCollapseButton"] {
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: inline-flex !important;
+    }
+    
+    [data-testid="stSidebarCollapseButton"] button {
+        visibility: visible !important;
+        opacity: 1 !important;
+        color: #f8fafc !important;
+        background-color: #334155 !important;
+        border: 1px solid #475569 !important;
+        border-radius: 8px !important;
+        width: 36px !important;
+        height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    [data-testid="stSidebarCollapseButton"] button:hover {
+        background-color: #38bdf8 !important;
+        color: #0f172a !important;
+        border-color: #38bdf8 !important;
+    }
+
+    /* 2. 사이드바 헤더 영역 패딩 및 정렬 보정 */
+    [data-testid="stSidebarHeader"] {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+
+    /* 3. 사이드바가 닫혔을 때 다시 여는 버튼 (>>) 시인성 강화 */
+    [data-testid="stSidebarCollapsedControl"] {
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    [data-testid="stSidebarCollapsedControl"] button {
+        background-color: #1e293b !important;
+        border: 1px solid #475569 !important;
+        border-radius: 8px !important;
+        color: #38bdf8 !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
