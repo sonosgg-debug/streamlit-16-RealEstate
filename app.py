@@ -110,9 +110,13 @@ st.markdown("""
         transition: all 0.2s !important;
     }
 
-    /* Ensure sidebar has comfortable width */
-    section[data-testid="stSidebar"] {
+    /* Ensure sidebar has comfortable width when open */
+    section[data-testid="stSidebar"][aria-expanded="true"] {
         min-width: 320px !important;
+    }
+    section[data-testid="stSidebar"][aria-expanded="false"] {
+        min-width: 0px !important;
+        width: 0px !important;
     }
 
     /* Reduce column gap in sidebar for quick select buttons */
