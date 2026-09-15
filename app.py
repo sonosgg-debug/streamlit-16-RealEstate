@@ -29,7 +29,7 @@ st.markdown("""
     [data-testid="stMainBlockContainer"] {
         padding-top: 3.0rem !important;
         padding-bottom: 3.0rem !important;
-        max-width: 1400px;
+        max-width: 100% !important;
     }
     
     /* Sidebar styling */
