@@ -31,6 +31,15 @@ st.markdown("""
         max-width: 100% !important;
     }
     
+    /* Headers & Main Title (00 Bookmarks 스타일 일치) */
+    h1, .main h1, [data-testid="stHeadingWithActionElements"] h1, .main-title {
+        color: #8AB4F8 !important;
+        -webkit-text-fill-color: #8AB4F8 !important;
+        font-size: 1.9rem !important;
+        font-weight: 800 !important;
+        text-align: center !important;
+    }
+
     /* Sidebar styling */
     section[data-testid="stSidebar"] {
         background-color: #1e293b !important;
@@ -382,8 +391,8 @@ with st.sidebar:
 # 5. Main Content Area
 # Title and Subtitle styled exactly like "00 Bookmarks"
 st.markdown(
-    "<h1 style='text-align: center; font-size: 1.9rem; font-weight: 800; line-height: 1.35; margin: 0 0 10px 0; color: #8AB4F8 !important;'>"
-    "부동산 vs 주식 투자 수익률 비교"
+    "<h1 class='main-title' style='text-align: center; font-size: 1.9rem !important; font-weight: 800 !important; line-height: 1.35; margin: 0 0 10px 0; color: #8AB4F8 !important; -webkit-text-fill-color: #8AB4F8 !important;'>"
+    "<span style='color: #8AB4F8 !important; -webkit-text-fill-color: #8AB4F8 !important;'>부동산 vs 주식 투자 수익률 비교</span>"
     "</h1>",
     unsafe_allow_html=True
 )
