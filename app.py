@@ -382,7 +382,7 @@ with st.sidebar:
 # 5. Main Content Area
 # Title and Subtitle styled exactly like "00 Bookmarks"
 st.markdown(
-    "<h1 style='text-align: center; font-size: 1.8rem; font-weight: 800; line-height: 1.35; margin: 0 0 10px 0; color: #8AB4F8 !important;'>"
+    "<h1 style='text-align: center; font-size: 1.9rem; font-weight: 800; line-height: 1.35; margin: 0 0 10px 0; color: #8AB4F8 !important;'>"
     "부동산 vs 주식 투자 수익률 비교"
     "</h1>",
     unsafe_allow_html=True
