@@ -9,7 +9,6 @@ import chart_builder
 # 1. Page Configuration
 st.set_page_config(
     page_title="부동산 vs 주식 투자 수익률 비교",
-    page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
 )
