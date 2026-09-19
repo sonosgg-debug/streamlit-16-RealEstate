@@ -525,7 +525,7 @@ with tab2:
         )
     with d_col2:
         st.download_button(
-            label="📊 수익률 데이터 엑셀 다운로드",
+            label="📥 엑셀 파일 다운로드",
             data=excel_data,
             file_name=f"부동산_주식_수익률비교_{start_val.strftime('%Y%m')}_{end_val.strftime('%Y%m')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
