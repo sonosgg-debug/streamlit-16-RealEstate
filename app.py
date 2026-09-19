@@ -517,7 +517,7 @@ with tab2:
     d_col1, d_col2 = st.columns(2)
     with d_col1:
         st.download_button(
-            label="📥 수익률 데이터 CSV 다운로드",
+            label="📥 CSV 파일 다운로드",
             data=csv_data,
             file_name=f"부동산_주식_수익률비교_{start_val.strftime('%Y%m')}_{end_val.strftime('%Y%m')}.csv",
             mime="text/csv",
