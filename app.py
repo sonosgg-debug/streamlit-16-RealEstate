@@ -26,7 +26,7 @@ st.markdown("""
     /* Main Content Area - reduce top padding */
     .main .block-container,
     [data-testid="stMainBlockContainer"] {
-        padding-top: 3.0rem !important;
+        padding-top: 2.0rem !important;
         padding-bottom: 3.0rem !important;
         max-width: 100% !important;
     }
@@ -35,7 +35,7 @@ st.markdown("""
     h1, .main h1, [data-testid="stHeadingWithActionElements"] h1, .main-title {
         color: #8AB4F8 !important;
         -webkit-text-fill-color: #8AB4F8 !important;
-        font-size: 1.9rem !important;
+        font-size: 2.0rem !important;
         font-weight: 800 !important;
         text-align: center !important;
     }
@@ -391,7 +391,7 @@ with st.sidebar:
 # 5. Main Content Area
 # Title and Subtitle styled exactly like "00 Bookmarks"
 st.markdown(
-    "<h1 class='main-title' style='text-align: center; font-size: 1.9rem !important; font-weight: 800 !important; line-height: 1.35; margin: 0 0 10px 0; color: #8AB4F8 !important; -webkit-text-fill-color: #8AB4F8 !important;'>"
+    "<h1 class='main-title' style='text-align: center; font-size: 2.0rem !important; font-weight: 800 !important; line-height: 1.35; margin: 0 0 10px 0; color: #8AB4F8 !important; -webkit-text-fill-color: #8AB4F8 !important;'>"
     "<span style='color: #8AB4F8 !important; -webkit-text-fill-color: #8AB4F8 !important;'>부동산 vs 주식 투자 수익률 비교</span>"
     "</h1>",
     unsafe_allow_html=True
@@ -531,3 +531,13 @@ with tab2:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True
         )
+
+# 하단 투자 유의사항 공통 푸터
+st.markdown("<hr style='border: 0; height: 1px; background-color: #334155; margin: 30px 0 10px 0;'>", unsafe_allow_html=True)
+st.markdown(
+    "<div style='text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 8px; margin-bottom: 24px; line-height: 1.6;'>"
+    "⚠️ 본 서비스에서 제공하는 모든 정보는 투자 참고용이며, 투자의 최종 결정과 책임은 투자자 본인에게 있습니다."
+    "</div>",
+    unsafe_allow_html=True
+)
+
