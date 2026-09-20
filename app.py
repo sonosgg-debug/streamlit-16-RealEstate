@@ -260,14 +260,6 @@ min_dt = df_combined.index[0].to_pydatetime().date() # 1986-01-01
 latest_kb_date = df_combined["강남11개구"].dropna().index[-1].to_pydatetime().date()
 max_dt = latest_kb_date
 
-# Date session state initialization (directly linked to widget keys)
-if 'cal_start' not in st.session_state:
-    st.session_state['cal_start'] = min_dt
-if 'cal_end' not in st.session_state:
-    st.session_state['cal_end'] = max_dt
-if 'quick_select' not in st.session_state:
-    st.session_state['quick_select'] = "MAX"
-
 # Helper for Quick Select calculation
 def apply_quick_select(choice):
     st.session_state['quick_select'] = choice
@@ -289,6 +281,14 @@ def apply_quick_select(choice):
     # Directly update session_state keys tied to st.date_input
     st.session_state['cal_start'] = start_d
     st.session_state['cal_end'] = end_d
+
+# Date session state initialization (directly linked to widget keys)
+if 'quick_select' not in st.session_state:
+    apply_quick_select("10Y")
+if 'cal_start' not in st.session_state:
+    st.session_state['cal_start'] = datetime.date(max_dt.year - 10, max_dt.month, 1)
+if 'cal_end' not in st.session_state:
+    st.session_state['cal_end'] = max_dt
 
 # 4. Sidebar Controls
 with st.sidebar:
