@@ -490,7 +490,7 @@ with tab1:
 
         st.dataframe(formatted_df, use_container_width=True, hide_index=True)
         st.caption("※ CAGR(연평균 복리 수익률) 및 MDD(최대 낙폭)는 해당 자산의 장기 성장성과 리스크(변동성 방어력)를 평가하는 지표입니다.")
-        st.caption("※ 주식과 부동산 투자에 따르는 세금과 부대 비용, 임대소득과 배당수익 등을 고려하지 않은 단순 수익률을 제시합니다.")
+        st.caption("※ 주식과 부동산 투자에 따르는 각종 세금, 부대 비용, 임대소득, 배당수익 등을 고려하지 않은 단순 수익률을 비교합니다.")
 
 with tab2:
     st.markdown("<p style='font-size: 0.9rem; color: #cbd5e1;'>조회된 기간의 누적 수익률(%) 시계열 데이터입니다.</p>", unsafe_allow_html=True)
