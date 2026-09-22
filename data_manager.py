@@ -1,3 +1,6 @@
+import socket
+socket.setdefaulttimeout(5.0)
+
 import os
 import glob
 import datetime
@@ -149,41 +152,66 @@ def update_stock_cache():
         kospi_monthly = df_existing['KOSPI'].copy()
         last_date = kospi_monthly.dropna().index[-1]
         now = pd.Timestamp.now()
-        # If cache is older than current month, fetch recent using pykrx
+        # If cache is older than current month, fetch recent
         if (now.year > last_date.year) or (now.month > last_date.month):
+            s_str = (last_date - pd.DateOffset(months=1)).strftime('%Y%m%d')
+            e_str = now.strftime('%Y%m%d')
+            updated = False
+            # 1. Try FinanceDataReader first (fast, works on AWS/Cloud without IP blocks)
             try:
-                from pykrx import stock
-                s_str = (last_date - pd.DateOffset(months=1)).strftime('%Y%m%d')
-                e_str = now.strftime('%Y%m%d')
-                df_recent = stock.get_index_ohlcv_by_date(s_str, e_str, "1001")
-                if df_recent is not None and not df_recent.empty:
-                    m_recent = df_recent['종가'].resample('ME').last()
-                    m_recent.index = m_recent.index.to_period('M').to_timestamp()
-                    kospi_monthly = kospi_monthly.combine_first(m_recent)
+                import FinanceDataReader as fdr
+                df_fdr = fdr.DataReader('KS11', (last_date - pd.DateOffset(months=1)).strftime('%Y-%m-%d'), now.strftime('%Y-%m-%d'))
+                if df_fdr is not None and not df_fdr.empty and 'Close' in df_fdr.columns:
+                    m_fdr = df_fdr['Close'].resample('ME').last()
+                    m_fdr.index = m_fdr.index.to_period('M').to_timestamp()
+                    kospi_monthly = kospi_monthly.combine_first(m_fdr)
+                    updated = True
             except Exception as e:
-                print(f"Error updating recent KOSPI: {e}")
+                print(f"FDR update failed: {e}")
+
+            # 2. If FDR failed, try pykrx with timeout protection
+            if not updated:
+                try:
+                    from pykrx import stock
+                    df_recent = stock.get_index_ohlcv_by_date(s_str, e_str, "1001")
+                    if df_recent is not None and not df_recent.empty:
+                        m_recent = df_recent['종가'].resample('ME').last()
+                        m_recent.index = m_recent.index.to_period('M').to_timestamp()
+                        kospi_monthly = kospi_monthly.combine_first(m_recent)
+                except Exception as e:
+                    print(f"Error updating recent KOSPI via pykrx: {e}")
     else:
         # Full build KOSPI
         try:
-            from pykrx import stock
-            chunks = []
-            for start_yr in range(1986, 2027, 5):
-                end_yr = min(datetime.date.today().year, start_yr + 4)
-                s_date = f"{start_yr}0101"
-                e_date = f"{end_yr}1231"
-                try:
-                    df_c = stock.get_index_ohlcv_by_date(s_date, e_date, "1001")
-                    if df_c is not None and not df_c.empty:
-                        m_c = df_c['종가'].resample('ME').last()
-                        chunks.append(m_c)
-                except Exception:
-                    pass
-            if chunks:
-                kospi_monthly = pd.concat(chunks)
-                kospi_monthly.index = kospi_monthly.index.to_period('M').to_timestamp()
+            import FinanceDataReader as fdr
+            df_all = fdr.DataReader('KS11', '1986-01-01')
+            if df_all is not None and not df_all.empty and 'Close' in df_all.columns:
+                m_all = df_all['Close'].resample('ME').last()
+                m_all.index = m_all.index.to_period('M').to_timestamp()
+                kospi_monthly = m_all
                 kospi_monthly.name = 'KOSPI'
         except Exception as e:
-            print(f"Error building full KOSPI: {e}")
+            print(f"Error building full KOSPI via FDR: {e}")
+            try:
+                from pykrx import stock
+                chunks = []
+                for start_yr in range(1986, 2027, 5):
+                    end_yr = min(datetime.date.today().year, start_yr + 4)
+                    s_date = f"{start_yr}0101"
+                    e_date = f"{end_yr}1231"
+                    try:
+                        df_c = stock.get_index_ohlcv_by_date(s_date, e_date, "1001")
+                        if df_c is not None and not df_c.empty:
+                            m_c = df_c['종가'].resample('ME').last()
+                            chunks.append(m_c)
+                    except Exception:
+                        pass
+                if chunks:
+                    kospi_monthly = pd.concat(chunks)
+                    kospi_monthly.index = kospi_monthly.index.to_period('M').to_timestamp()
+                    kospi_monthly.name = 'KOSPI'
+            except Exception as e2:
+                print(f"Error building full KOSPI via pykrx: {e2}")
 
     # Combine KOSPI and S&P 500
     df_stocks = pd.DataFrame({'KOSPI': kospi_monthly, 'S&P 500': sp_monthly})
