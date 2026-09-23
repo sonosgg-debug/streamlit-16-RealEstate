@@ -143,8 +143,8 @@ def build_comparison_chart(df_returns, df_sliced):
     if df_returns is None or df_returns.empty:
         fig.update_layout(
             template="plotly_dark",
-            paper_bgcolor="#0f172a",
-            plot_bgcolor="#1e293b",
+            paper_bgcolor="#1E293B",
+            plot_bgcolor="#0F172A",
             annotations=[{
                 "text": "표시할 데이터가 없습니다.",
                 "xref": "paper",
@@ -194,11 +194,11 @@ def build_comparison_chart(df_returns, df_sliced):
         annotation_font=dict(color="rgba(255, 255, 255, 0.6)", size=11)
     )
     
-    # Layout styling matching 00 Bookmarks dark palette
+    # Layout styling matching high-contrast Tailwind Slate standard
     fig.update_layout(
         template="plotly_dark",
-        paper_bgcolor="#0f172a",
-        plot_bgcolor="#1e293b",
+        paper_bgcolor="#1E293B",
+        plot_bgcolor="#0F172A",
         margin=dict(l=50, r=30, t=40, b=50),
         height=620,
         hovermode="x unified",
