@@ -183,6 +183,17 @@ def build_comparison_chart(df_returns, df_sliced):
             connectgaps=False
         ))
         
+    # Activate secondary y-axis on the right so Plotly renders right-side tick labels
+    fig.add_trace(go.Scatter(
+        x=[None],
+        y=[None],
+        yaxis="y2",
+        mode="markers",
+        marker=dict(opacity=0, size=0),
+        showlegend=False,
+        hoverinfo="skip"
+    ))
+        
     # Add horizontal baseline at 0%
     fig.add_hline(
         y=0,
@@ -199,7 +210,7 @@ def build_comparison_chart(df_returns, df_sliced):
         template="plotly_dark",
         paper_bgcolor="#1E293B",
         plot_bgcolor="#0F172A",
-        margin=dict(l=50, r=30, t=40, b=50),
+        margin=dict(l=50, r=50, t=40, b=50),
         height=620,
         hovermode="x unified",
         legend=dict(
@@ -234,6 +245,23 @@ def build_comparison_chart(df_returns, df_sliced):
             showgrid=True,
             gridcolor="#334155",
             gridwidth=1,
+            zeroline=False,
+            showline=True,
+            linecolor="#475569",
+            ticksuffix="%",
+            tickfont=dict(color="#cbd5e1", size=11),
+            showspikes=True,
+            spikemode="across",
+            spikesnap="cursor",
+            spikethickness=1,
+            spikedash="dot",
+            spikecolor="#94a3b8"
+        ),
+        yaxis2=dict(
+            overlaying="y",
+            side="right",
+            matches="y",
+            showgrid=False,
             zeroline=False,
             showline=True,
             linecolor="#475569",
