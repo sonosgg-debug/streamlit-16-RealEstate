@@ -425,7 +425,7 @@ with st.sidebar:
     
     st.markdown(f"""
     <div style='font-size: 0.8rem; color: #94a3b8; line-height: 1.5; background-color: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #334155;'>
-        • <b>KB 파일</b>: <span style='color: #38bdf8;'>{kb_name}</span><br>
+        • <b>KB부동산</b>: <span style='color: #38bdf8;'>{kb_name}</span><br>
         • <b>갱신 일시</b>: {kb_mtime}<br>
         • <b>수집 범위</b>: {start_str} ~ {end_str}<br>
         • <b>주식 지수</b>: KOSPI, S&P 500 (월말 종가)
@@ -434,7 +434,7 @@ with st.sidebar:
     
     # File Uploader Dropzone for user convenience
     st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 0.85rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px;'>📤 새 KB 엑셀 업로드</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 0.85rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px;'>📤 새 파일 업로드</p>", unsafe_allow_html=True)
     uploaded = st.file_uploader("새 파일 드롭", type=["xlsx", "xls"], label_visibility="collapsed")
     if uploaded is not None:
         ok, msg = data_manager.save_uploaded_kb_file(uploaded)
