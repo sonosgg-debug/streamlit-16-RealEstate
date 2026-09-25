@@ -492,7 +492,7 @@ if notes:
     st.markdown(f"<div class='custom-info-box'>ℹ️ {notice_text}</div>", unsafe_allow_html=True)
 
 # 7. Summary Metric Cards (KPI)
-st.markdown("<div style='margin-bottom: 12px; font-weight: 700; font-size: 1.05rem; color: #e2e8f0;'>📊 기간 누적 수익률 요약</div>", unsafe_allow_html=True)
+st.markdown("<div style='font-size: 1.20rem; font-weight: 700; color: #8AB4F8; margin: 20px 0 10px 0; display: flex; align-items: center; gap: 8px;'><span>📊</span> 기간 누적 수익률 요약</div>", unsafe_allow_html=True)
 
 kpi_cols = st.columns(6)
 for idx, col_name in enumerate(chart_builder.COLOR_PALETTE.keys()):
@@ -520,14 +520,13 @@ for idx, col_name in enumerate(chart_builder.COLOR_PALETTE.keys()):
             </div>
             """, unsafe_allow_html=True)
 
-st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
-
 # 8. Interactive Plotly Line Chart
+st.markdown("<div style='font-size: 1.20rem; font-weight: 700; color: #8AB4F8; margin: 20px 0 10px 0; display: flex; align-items: center; gap: 8px;'><span>📈</span> 자산군별 누적 수익률 비교 차트</div>", unsafe_allow_html=True)
 fig = chart_builder.build_comparison_chart(df_returns, df_sliced)
 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': True, 'responsive': True})
 
 # 9. Statistical Comparison Table & CSV Download
-st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+st.markdown("<div style='font-size: 1.20rem; font-weight: 700; color: #8AB4F8; margin: 20px 0 10px 0; display: flex; align-items: center; gap: 8px;'><span>📋</span> 투자 성과 통계 및 데이터 테이블</div>", unsafe_allow_html=True)
 
 tab1, tab2 = st.tabs(["📋 투자 성과 비교 분석표", "📥 원본/가공 데이터 보기"])
 
