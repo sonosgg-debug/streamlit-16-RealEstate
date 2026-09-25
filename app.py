@@ -41,19 +41,16 @@ st.markdown("""
     }
 
     /* Sidebar styling */
-    section[data-testid="stSidebar"] {
+    section[data-testid="stSidebar"], [data-testid="stSidebar"] {
         background-color: #1e293b !important;
-        border-right: 1px solid #334155;
+        border-right: 1px solid #334155 !important;
     }
     
     section[data-testid="stSidebar"] h1,
     section[data-testid="stSidebar"] h2,
     section[data-testid="stSidebar"] h3 {
         color: #f8fafc !important;
-        font-size: 1.15rem !important;
-        font-weight: 700 !important;
-        margin-top: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
+        -webkit-text-fill-color: #f8fafc !important;
     }
     
     /* Input fields & widgets styling */
@@ -337,9 +334,22 @@ if 'cal_end' not in st.session_state:
 
 # 4. Sidebar Controls
 with st.sidebar:
-    st.markdown("### ⚙️ 조회 설정")
+    st.markdown(
+        """
+        <div style='padding: 2px 0 12px 0;'>
+            <div style='font-size: 1.25rem; font-weight: 700; color: #f8fafc; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px;'>
+                <span>⚙️</span> 조회 설정
+            </div>
+            <div style='font-size: 0.82rem; color: #94a3b8; margin-top: 4px; line-height: 1.4;'>
+                부동산 및 자산군 비교 기간과 옵션을 설정합니다.
+            </div>
+        </div>
+        <hr style='border: 0; height: 1px; background-color: #334155; margin: 10px 0 16px 0;'>
+        """,
+        unsafe_allow_html=True
+    )
     
-    st.markdown("<p style='font-size: 0.9rem; font-weight: 600; margin-bottom: 5px; color: #cbd5e1;'>📅 조회 기간</p>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 6px;'>📅 조회 기간</div>", unsafe_allow_html=True)
     
     col_s, col_e = st.columns(2)
     with col_s:
@@ -358,7 +368,7 @@ with st.sidebar:
         )
 
     st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; color: #cbd5e1;'>⚡ 빠른 선택</p>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 6px;'>⚡ 빠른 선택</div>", unsafe_allow_html=True)
     
     # 5 quick select options: 1Y, 5Y, 10Y, 20Y, MAX
     q_cols = st.columns(5)
@@ -400,10 +410,10 @@ with st.sidebar:
         # Reset quick_select indicator to custom if dates differ
         st.rerun()
 
-    st.markdown("---")
+    st.markdown("<hr style='border: 0; height: 1px; background-color: #334155; margin: 16px 0;'>", unsafe_allow_html=True)
     
     # Data Status & File Info
-    st.markdown("<p style='font-size: 0.85rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px;'>📁 데이터 소스 현황</p>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #e2e8f0; margin-bottom: 6px;'>📁 데이터 소스 현황</div>", unsafe_allow_html=True)
     kb_name = meta.get("kb_file_name", "미상")
     kb_mtime = meta.get("kb_file_mtime", "-")
     start_str = meta.get("start_date", "-")
