@@ -357,14 +357,18 @@ with st.sidebar:
             "시작일",
             key="cal_start",
             min_value=min_dt,
-            max_value=max_dt
+            max_value=max_dt,
+            label_visibility="collapsed",
+            help="조회 시작일"
         )
     with col_e:
         st.date_input(
             "종료일",
             key="cal_end",
             min_value=min_dt,
-            max_value=max_dt
+            max_value=max_dt,
+            label_visibility="collapsed",
+            help="조회 종료일"
         )
 
     st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
