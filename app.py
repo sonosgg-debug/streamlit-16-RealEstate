@@ -290,9 +290,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. Data Initialization
-if 'df_combined' not in st.session_state or 'meta' not in st.session_state:
-    with st.spinner("데이터 로딩 중..."):
+# 3. Data Initialization & Auto-Detection
+latest_disk_file = data_manager.get_latest_kb_file()
+latest_disk_name = os.path.basename(latest_disk_file) if latest_disk_file else None
+
+need_data_load = (
+    'df_combined' not in st.session_state or 
+    'meta' not in st.session_state or
+    st.session_state.get('df_combined') is None or
+    (latest_disk_name and latest_disk_name != st.session_state.get('meta', {}).get('kb_file_name'))
+)
+
+if need_data_load:
+    with st.spinner("최신 부동산 및 금융 데이터 로딩 중..."):
         df_loaded, meta_loaded = data_manager.load_combined_data(force_update=False)
         st.session_state.df_combined = df_loaded
         st.session_state.meta = meta_loaded
@@ -311,9 +321,9 @@ latest_kb_date = df_combined["강남11개구"].dropna().index[-1].to_pydatetime(
 max_dt = latest_kb_date
 
 # Helper for Quick Select calculation
-def apply_quick_select(choice):
+def apply_quick_select(choice, anchor_end=None):
     st.session_state['quick_select'] = choice
-    end_d = max_dt
+    end_d = anchor_end if anchor_end is not None else max_dt
     if choice == "1Y":
         start_d = datetime.date(end_d.year - 1, end_d.month, 1)
     elif choice == "5Y":
@@ -332,9 +342,17 @@ def apply_quick_select(choice):
     st.session_state['cal_start'] = start_d
     st.session_state['cal_end'] = end_d
 
-# Date session state initialization (directly linked to widget keys)
+# Detect if new data expanded max_dt, and automatically update cal_end and cal_start
+prev_max_dt = st.session_state.get('prev_max_dt')
+if prev_max_dt is None or prev_max_dt != max_dt:
+    st.session_state['prev_max_dt'] = max_dt
+    st.session_state['cal_end'] = max_dt
+    curr_q = st.session_state.get('quick_select', '10Y')
+    apply_quick_select(curr_q, anchor_end=max_dt)
+
+# Date session state initial fallback (directly linked to widget keys)
 if 'quick_select' not in st.session_state:
-    apply_quick_select("10Y")
+    apply_quick_select("10Y", anchor_end=max_dt)
 if 'cal_start' not in st.session_state:
     st.session_state['cal_start'] = datetime.date(max_dt.year - 10, max_dt.month, 1)
 if 'cal_end' not in st.session_state:
@@ -395,7 +413,7 @@ with st.sidebar:
                 type=btn_type,
                 use_container_width=True,
                 on_click=apply_quick_select,
-                args=(opt,)
+                args=(opt, max_dt)
             )
 
     st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
@@ -413,13 +431,32 @@ with st.sidebar:
             if df_updated is not None:
                 st.session_state.df_combined = df_updated
                 st.session_state.meta = meta_updated
-                st.success("데이터 갱신 완료!")
+                new_max = df_updated["강남11개구"].dropna().index[-1].to_pydatetime().date()
+                st.session_state['prev_max_dt'] = new_max
+                st.session_state['cal_end'] = new_max
+                curr_q = st.session_state.get('quick_select', '10Y')
+                apply_quick_select(curr_q, anchor_end=new_max)
+                st.success(f"데이터 갱신 완료! ({new_max.strftime('%Y년 %m월')} 최신 지표 반영)")
                 st.rerun()
             else:
                 st.error(meta_updated.get("error", "업데이트 실패"))
                 
     if btn_search:
-        # Reset quick_select indicator to custom if dates differ
+        # Check if a newer file exists on disk
+        latest_check = data_manager.get_latest_kb_file()
+        latest_name = os.path.basename(latest_check) if latest_check else None
+        cached_name = st.session_state.get('meta', {}).get('kb_file_name')
+        if latest_name and latest_name != cached_name:
+            with st.spinner("새 파일 감지됨. 데이터 동기화 중..."):
+                df_updated, meta_updated = data_manager.load_combined_data(force_update=True)
+                if df_updated is not None:
+                    st.session_state.df_combined = df_updated
+                    st.session_state.meta = meta_updated
+                    new_max = df_updated["강남11개구"].dropna().index[-1].to_pydatetime().date()
+                    st.session_state['prev_max_dt'] = new_max
+                    st.session_state['cal_end'] = new_max
+                    curr_q = st.session_state.get('quick_select', '10Y')
+                    apply_quick_select(curr_q, anchor_end=new_max)
         st.rerun()
 
     st.markdown("<hr style='border: 0; height: 1px; background-color: #334155; margin: 16px 0;'>", unsafe_allow_html=True)
@@ -430,10 +467,12 @@ with st.sidebar:
     kb_mtime = meta.get("kb_file_mtime", "-")
     start_str = meta.get("start_date", "-")
     end_str = meta.get("end_date", "-")
+    latest_re = meta.get("latest_real_estate", end_str)
     
     st.markdown(f"""
     <div style='font-size: 0.8rem; color: #94a3b8; line-height: 1.5; background-color: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #334155;'>
         • <b>KB부동산</b>: <span style='color: #38bdf8;'>{kb_name}</span><br>
+        • <b>부동산 최신월</b>: <span style='color: #4ade80; font-weight: 700;'>{latest_re}</span><br>
         • <b>갱신 일시</b>: {kb_mtime}<br>
         • <b>수집 범위</b>: {start_str} ~ {end_str}<br>
         • <b>주식 지수</b>: KOSPI, S&P 500 (월말 종가)
@@ -443,17 +482,31 @@ with st.sidebar:
     # File Uploader Dropzone for user convenience
     st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
     st.markdown("<p style='font-size: 0.85rem; font-weight: 700; color: #94a3b8; margin-bottom: 4px;'>📤 새 파일 업로드</p>", unsafe_allow_html=True)
-    uploaded = st.file_uploader("새 파일 드롭", type=["xlsx", "xls"], label_visibility="collapsed")
+    uploaded = st.file_uploader("새 파일 드롭", type=["xlsx", "xls"], label_visibility="collapsed", key="kb_uploader")
     if uploaded is not None:
-        ok, msg = data_manager.save_uploaded_kb_file(uploaded)
-        if ok:
-            st.success(msg)
-            df_reloaded, meta_reloaded = data_manager.load_combined_data(force_update=False)
-            st.session_state.df_combined = df_reloaded
-            st.session_state.meta = meta_reloaded
-            st.rerun()
-        else:
-            st.error(msg)
+        last_processed = st.session_state.get('last_uploaded_processed')
+        if last_processed != uploaded.name:
+            with st.spinner(f"'{uploaded.name}' 저장 및 데이터 갱신 중..."):
+                res = data_manager.save_uploaded_kb_file(uploaded)
+                if isinstance(res, tuple) and len(res) == 4:
+                    ok, msg, df_up, meta_up = res
+                else:
+                    ok, msg = res[0], res[1]
+                    df_up, meta_up = data_manager.load_combined_data(force_update=True)
+                    
+                if ok and df_up is not None:
+                    st.session_state.last_uploaded_processed = uploaded.name
+                    st.session_state.df_combined = df_up
+                    st.session_state.meta = meta_up
+                    new_max = df_up["강남11개구"].dropna().index[-1].to_pydatetime().date()
+                    st.session_state['prev_max_dt'] = new_max
+                    st.session_state['cal_end'] = new_max
+                    curr_q = st.session_state.get('quick_select', '10Y')
+                    apply_quick_select(curr_q, anchor_end=new_max)
+                    st.success(msg)
+                    st.rerun()
+                else:
+                    st.error(msg)
 
 # 5. Main Content Area
 # Title and Subtitle styled exactly like "00 Bookmarks"

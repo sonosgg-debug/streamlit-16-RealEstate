@@ -8,6 +8,9 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 
+import json
+import re
+
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 KB_DATA_DIR = os.path.join(BASE_DIR, "KBData")
@@ -15,12 +18,18 @@ CACHE_DIR = os.path.join(BASE_DIR, "data_cache")
 STOCK_CACHE_FILE = os.path.join(CACHE_DIR, "stock_monthly_historical.csv")
 COMBINED_CACHE_FILE = os.path.join(CACHE_DIR, "combined_monthly_data.parquet")
 COMBINED_CSV_FILE = os.path.join(CACHE_DIR, "combined_monthly_data.csv")
+METADATA_CACHE_FILE = os.path.join(CACHE_DIR, "combined_metadata.json")
 
 TARGET_REGIONS = ["강남11개구", "강북14개구", "수도권", "전국"]
 DISPLAY_COLUMNS = ["강남11개구", "강북14개구", "수도권", "전국", "KOSPI", "S&P 500"]
 
 def get_latest_kb_file():
-    """Find the latest KB Excel file in KBData directory"""
+    """
+    Find the latest KB Excel file in KBData directory.
+    Filters out temporary Excel lock files (~$...) and sorts by:
+    1. Date extracted from filename (YYYYMMDD or YYYYMM) descending
+    2. File modification time (mtime) descending
+    """
     if not os.path.exists(KB_DATA_DIR):
         os.makedirs(KB_DATA_DIR, exist_ok=True)
         return None
@@ -29,9 +38,28 @@ def get_latest_kb_file():
     if not excel_files:
         return None
     
-    # Sort by modification time descending
-    excel_files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-    return excel_files[0]
+    # Exclude temporary lock files created by Excel
+    valid_files = [f for f in excel_files if not os.path.basename(f).startswith("~$")]
+    if not valid_files:
+        return None
+    
+    def file_sort_key(file_path):
+        fname = os.path.basename(file_path)
+        # Search for 8 digits (e.g. 20260930) or 6 digits (e.g. 202609)
+        m8 = re.search(r'(\d{8})', fname)
+        if m8:
+            date_val = int(m8.group(1))
+        else:
+            m6 = re.search(r'(\d{6})', fname)
+            date_val = int(m6.group(1)) * 100 if m6 else 0
+        try:
+            mtime = os.path.getmtime(file_path)
+        except Exception:
+            mtime = 0
+        return (date_val, mtime)
+    
+    valid_files.sort(key=file_sort_key, reverse=True)
+    return valid_files[0]
 
 def parse_kb_excel(file_path):
     """
@@ -80,11 +108,11 @@ def parse_kb_excel(file_path):
     df_kb_clean = df_kb.loc[valid_rows].copy()
     df_kb_clean.index = valid_dates
     
-    # Replace '-' or other non-numeric with NaN, then convert to float
+    # Replace '-' or other non-numeric with NaN, then convert to float cleanly
     for col in TARGET_REGIONS:
         if col in df_kb_clean.columns:
-            df_kb_clean[col] = df_kb_clean[col].replace('-', np.nan)
-            df_kb_clean[col] = pd.to_numeric(df_kb_clean[col], errors='coerce')
+            s = df_kb_clean[col].astype(str).str.strip().replace({'-': np.nan, '': np.nan, 'None': np.nan, 'nan': np.nan})
+            df_kb_clean[col] = pd.to_numeric(s, errors='coerce')
         else:
             df_kb_clean[col] = np.nan
             
@@ -246,38 +274,70 @@ def load_combined_data(force_update=False):
     if latest_file is None:
         return None, {"error": "KBData 폴더에 엑셀 파일이 존재하지 않습니다."}
         
-    kb_mod_time = os.path.getmtime(latest_file)
+    try:
+        kb_mod_time = os.path.getmtime(latest_file)
+    except Exception:
+        kb_mod_time = 0
     kb_file_name = os.path.basename(latest_file)
+    kb_mtime_str = datetime.datetime.fromtimestamp(kb_mod_time).strftime('%Y-%m-%d %H:%M:%S')
     
-    # Check if cache exists and is fresh
-    if not force_update and os.path.exists(COMBINED_CSV_FILE):
+    # Load stored metadata if available
+    stored_meta = {}
+    if os.path.exists(METADATA_CACHE_FILE):
         try:
-            df_cache = pd.read_csv(COMBINED_CSV_FILE, index_col=0, parse_dates=True)
-            df_cache.index = pd.to_datetime(df_cache.index).to_period('M').to_timestamp()
-            cache_mod_time = os.path.getmtime(COMBINED_CSV_FILE)
+            with open(METADATA_CACHE_FILE, "r", encoding="utf-8") as f:
+                stored_meta = json.load(f)
+        except Exception:
+            stored_meta = {}
             
-            # If cache is newer than KB excel file, return cached data
-            if cache_mod_time >= kb_mod_time:
-                metadata = {
-                    "kb_file_name": kb_file_name,
-                    "kb_file_mtime": datetime.datetime.fromtimestamp(kb_mod_time).strftime('%Y-%m-%d %H:%M:%S'),
-                    "start_date": df_cache.index[0].strftime('%Y-%m'),
-                    "end_date": df_cache.index[-1].strftime('%Y-%m'),
-                    "total_months": len(df_cache),
-                    "from_cache": True
-                }
-                return df_cache, metadata
-        except Exception as e:
-            print(f"Error reading combined cache: {e}")
+    # Check if cache exists and is strictly valid for the current latest KB file
+    cache_is_valid = False
+    if not force_update and os.path.exists(COMBINED_CSV_FILE):
+        # Cache is valid only if:
+        # 1. Stored metadata matches the current latest KB file name
+        # 2. KB file modification time matches or is older than recorded
+        # 3. Cache file exists and can be loaded with non-empty real estate data
+        cached_file_name = stored_meta.get("kb_file_name")
+        if cached_file_name == kb_file_name:
+            try:
+                df_cache = pd.read_csv(COMBINED_CSV_FILE, index_col=0, parse_dates=True)
+                df_cache.index = pd.to_datetime(df_cache.index).to_period('M').to_timestamp()
+                
+                # Check that real estate column has valid values
+                if "강남11개구" in df_cache.columns and not df_cache["강남11개구"].dropna().empty:
+                    cache_is_valid = True
+                    latest_re_date = df_cache["강남11개구"].dropna().index[-1].strftime('%Y-%m')
+                    metadata = {
+                        "kb_file_name": kb_file_name,
+                        "kb_file_mtime": kb_mtime_str,
+                        "start_date": df_cache.index[0].strftime('%Y-%m'),
+                        "end_date": df_cache.index[-1].strftime('%Y-%m'),
+                        "latest_real_estate": latest_re_date,
+                        "total_months": len(df_cache),
+                        "from_cache": True
+                    }
+                    return df_cache, metadata
+            except Exception as e:
+                print(f"Error reading combined cache: {e}")
+                cache_is_valid = False
             
-    # Rebuild combined data
+    # Rebuild combined data from latest KB excel
     df_kb = parse_kb_excel(latest_file)
     if df_kb is None or df_kb.empty:
         return None, {"error": f"KB 엑셀 파일({kb_file_name}) 파싱에 실패했습니다."}
         
-    df_stocks = get_stock_data()
+    df_stocks = None
     if force_update:
-        df_stocks = update_stock_cache()
+        try:
+            df_stocks = update_stock_cache()
+        except Exception as e:
+            print(f"Stock update error, falling back to cached stock: {e}")
+            df_stocks = get_stock_data()
+    else:
+        df_stocks = get_stock_data()
+        
+    if df_stocks is None:
+        df_stocks = pd.DataFrame(index=df_kb.index)
         
     # Merge on month index
     # Use outer join to keep all dates, but restrict to start from 1986-01-01
@@ -288,39 +348,56 @@ def load_combined_data(force_update=False):
     cols = [c for c in DISPLAY_COLUMNS if c in df_combined.columns]
     df_combined = df_combined[cols]
     
-    # Save cache
-    df_combined.to_csv(COMBINED_CSV_FILE)
+    # Save cache files
+    try:
+        df_combined.to_csv(COMBINED_CSV_FILE)
+    except Exception as e:
+        print(f"Error saving combined CSV: {e}")
     try:
         df_combined.to_parquet(COMBINED_CACHE_FILE)
     except Exception:
         pass
         
+    latest_re_date = df_combined["강남11개구"].dropna().index[-1].strftime('%Y-%m') if "강남11개구" in df_combined.columns and not df_combined["강남11개구"].dropna().empty else "-"
+    
     metadata = {
         "kb_file_name": kb_file_name,
-        "kb_file_mtime": datetime.datetime.fromtimestamp(kb_mod_time).strftime('%Y-%m-%d %H:%M:%S'),
+        "kb_file_mtime": kb_mtime_str,
         "start_date": df_combined.index[0].strftime('%Y-%m'),
         "end_date": df_combined.index[-1].strftime('%Y-%m'),
+        "latest_real_estate": latest_re_date,
         "total_months": len(df_combined),
         "from_cache": False
     }
+    
+    # Save metadata JSON cache
+    try:
+        with open(METADATA_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Error saving metadata cache: {e}")
+        
     return df_combined, metadata
 
 def save_uploaded_kb_file(uploaded_file):
     """Save an uploaded Streamlit file to KBData folder and trigger rebuild"""
     if uploaded_file is None:
-        return False, "업로드된 파일이 없습니다."
+        return False, "업로드된 파일이 없습니다.", None, None
     
     os.makedirs(KB_DATA_DIR, exist_ok=True)
     file_path = os.path.join(KB_DATA_DIR, uploaded_file.name)
     with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
         
-    # Rebuild combined cache
+    # Rebuild combined cache immediately with force_update=True
     df, meta = load_combined_data(force_update=True)
     if df is not None:
-        return True, f"'{uploaded_file.name}' 저장 및 데이터 업데이트 완료!"
+        re_month = meta.get("latest_real_estate", "")
+        msg = f"'{uploaded_file.name}' 저장 및 데이터 업데이트 완료! (최신 {re_month} 반영)"
+        return True, msg, df, meta
     else:
-        return False, meta.get("error", "데이터 업데이트 실패")
+        err = meta.get("error", "데이터 업데이트 실패")
+        return False, err, None, None
 
 def get_latest_expected_trading_day(target_date: str = None) -> str:
     """
