@@ -16,23 +16,29 @@ except Exception:
         pkg_mock.get_distribution = lambda *args, **kwargs: type("Dist", (), {"version": "1.0.0"})()
         sys.modules["pkg_resources"] = pkg_mock
 
-import os
-import datetime
-import pandas as pd
 import streamlit as st
-import importlib
-
-import data_manager
-importlib.reload(data_manager)
-import chart_builder
-importlib.reload(chart_builder)
 
 # 1. Page Configuration
+# [가이드 05] Streamlit 명령 최우선 실행 보장 (StreamlitAPIException 및 무한 로딩 방어)
 st.set_page_config(
     page_title="부동산 vs 주식 투자 수익률 비교",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+import os
+import datetime
+import pandas as pd
+import importlib
+
+try:
+    import data_manager
+    importlib.reload(data_manager)
+    import chart_builder
+    importlib.reload(chart_builder)
+except Exception as e:
+    st.error(f"모듈 로드 중 오류가 발생했습니다: {e}")
+    st.stop()
 
 # 2. Custom CSS styling (matching 00 Bookmarks design system)
 st.markdown("""
